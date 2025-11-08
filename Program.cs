@@ -1,111 +1,155 @@
 using System;
 using System.Collections.Generic;
 
-// ==== Модель ракети ====
+#region Product
+
+/// <summary>
+/// Продукт — Космічна ракета
+/// </summary>
 public class Rocket
 {
-    public string Name { get; set; }
-    public List<string> Stages { get; } = new();
-    public string Engine { get; set; }
-    public string Payload { get; set; }
+    private readonly List<string> _stages = new();
+
+    public string Name { get; private set; } = string.Empty;
+    public string Engine { get; private set; } = string.Empty;
+    public string Payload { get; private set; } = string.Empty;
+
+    public IReadOnlyList<string> Stages => _stages.AsReadOnly();
+
+    public void SetName(string name) => Name = name;
+    public void SetEngine(string engine) => Engine = engine;
+    public void SetPayload(string payload) => Payload = payload;
+    public void AddStage(string stage) => _stages.Add(stage);
 
     public override string ToString()
     {
         return $"🚀 Ракета: {Name}\n" +
                $"  Двигун: {Engine}\n" +
-               $"  Ступені: {string.Join(", ", Stages)}\n" +
+               $"  Ступені: {string.Join(", ", _stages)}\n" +
                $"  Корисний вантаж: {Payload}";
     }
 }
 
-// ==== Абстрактний будівельник ====
-public abstract class RocketBuilder
+#endregion
+
+#region Builder Abstraction
+
+/// <summary>
+/// Інтерфейс будівельника ракети
+/// </summary>
+public interface IRocketBuilder
 {
-    protected Rocket rocket = new();
-
-    public abstract void SetName();
-    public abstract void BuildStages();
-    public abstract void BuildEngine();
-    public abstract void BuildPayload();
-
-    public Rocket GetRocket() => rocket;
+    void Reset();
+    void SetName();
+    void BuildStages();
+    void BuildEngine();
+    void BuildPayload();
+    Rocket GetRocket();
 }
 
-// ==== Конкретні будівельники ====
-public class CargoRocketBuilder : RocketBuilder
+#endregion
+
+#region Concrete Builders
+
+public class CargoRocketBuilder : IRocketBuilder
 {
-    public override void SetName() => rocket.Name = "Falcon Heavy";
-    public override void BuildStages()
+    private Rocket _rocket = new();
+
+    public void Reset() => _rocket = new Rocket();
+
+    public void SetName() => _rocket.SetName("Falcon Heavy");
+    public void BuildStages()
     {
-        rocket.Stages.Add("Перший ступінь – багаторазовий");
-        rocket.Stages.Add("Другий ступінь – одноразовий");
+        _rocket.AddStage("Перший ступінь – багаторазовий");
+        _rocket.AddStage("Другий ступінь – одноразовий");
     }
-    public override void BuildEngine() => rocket.Engine = "Merlin 1D";
-    public override void BuildPayload() => rocket.Payload = "Вантажний модуль (до 60 тонн)";
+    public void BuildEngine() => _rocket.SetEngine("Merlin 1D");
+    public void BuildPayload() => _rocket.SetPayload("Вантажний модуль (до 60 тонн)");
+    public Rocket GetRocket() => _rocket;
 }
 
-public class TouristRocketBuilder : RocketBuilder
+public class TouristRocketBuilder : IRocketBuilder
 {
-    public override void SetName() => rocket.Name = "Starship";
-    public override void BuildStages()
+    private Rocket _rocket = new();
+
+    public void Reset() => _rocket = new Rocket();
+    public void SetName() => _rocket.SetName("Starship");
+    public void BuildStages()
     {
-        rocket.Stages.Add("Super Heavy Booster");
-        rocket.Stages.Add("Starship Orbital");
+        _rocket.AddStage("Super Heavy Booster");
+        _rocket.AddStage("Starship Orbital");
     }
-    public override void BuildEngine() => rocket.Engine = "Raptor 2";
-    public override void BuildPayload() => rocket.Payload = "Модуль для туристичних польотів";
+    public void BuildEngine() => _rocket.SetEngine("Raptor 2");
+    public void BuildPayload() => _rocket.SetPayload("Модуль для туристичних польотів");
+    public Rocket GetRocket() => _rocket;
 }
 
-public class SatelliteRocketBuilder : RocketBuilder
+public class SatelliteRocketBuilder : IRocketBuilder
 {
-    public override void SetName() => rocket.Name = "Electron";
-    public override void BuildStages()
+    private Rocket _rocket = new();
+
+    public void Reset() => _rocket = new Rocket();
+    public void SetName() => _rocket.SetName("Electron");
+    public void BuildStages()
     {
-        rocket.Stages.Add("Перший ступінь – легкий композит");
-        rocket.Stages.Add("Другий ступінь – орбітальний");
+        _rocket.AddStage("Перший ступінь – легкий композит");
+        _rocket.AddStage("Другий ступінь – орбітальний");
     }
-    public override void BuildEngine() => rocket.Engine = "Rutherford Electric";
-    public override void BuildPayload() => rocket.Payload = "Супутник на низьку орбіту";
+    public void BuildEngine() => _rocket.SetEngine("Rutherford Electric");
+    public void BuildPayload() => _rocket.SetPayload("Супутник на низьку орбіту");
+    public Rocket GetRocket() => _rocket;
 }
 
-// ==== Клас Director ====
+#endregion
+
+#region Director
+
+/// <summary>
+/// Director — керує процесом побудови
+/// </summary>
 public class RocketDirector
 {
-    private RocketBuilder builder;
+    private readonly IRocketBuilder _builder;
 
-    public RocketDirector(RocketBuilder builder)
+    public RocketDirector(IRocketBuilder builder)
     {
-        this.builder = builder;
+        _builder = builder;
     }
 
     public Rocket Construct()
     {
-        builder.SetName();
-        builder.BuildStages();
-        builder.BuildEngine();
-        builder.BuildPayload();
-        return builder.GetRocket();
+        _builder.Reset();
+        _builder.SetName();
+        _builder.BuildStages();
+        _builder.BuildEngine();
+        _builder.BuildPayload();
+        return _builder.GetRocket();
     }
 }
 
-// ==== Програма ====
+#endregion
+
+#region Program
+
 public class Program
 {
     public static void Main()
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
-        Console.WriteLine("ЛР9 — Патерн 'Будівельник' (варіант 10): створення космічної ракети\n");
+        Console.WriteLine("ЛР9 — Патерн 'Будівельник' (покращена версія)\n");
 
         var director = new RocketDirector(new CargoRocketBuilder());
-        var cargoRocket = director.Construct();
-        Console.WriteLine(cargoRocket + "\n");
+        var cargo = director.Construct();
+        Console.WriteLine(cargo + "\n");
 
         director = new RocketDirector(new TouristRocketBuilder());
-        var touristRocket = director.Construct();
-        Console.WriteLine(touristRocket + "\n");
+        var tourist = director.Construct();
+        Console.WriteLine(tourist + "\n");
 
         director = new RocketDirector(new SatelliteRocketBuilder());
-        var satelliteRocket = director.Construct();
-        Console.WriteLine(satelliteRocket);
+        var satellite = director.Construct();
+        Console.WriteLine(satellite);
     }
 }
+
+#endregion
